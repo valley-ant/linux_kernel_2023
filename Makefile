@@ -6,8 +6,8 @@ ALL := test_pthread test_linux
 all: $(ALL)
 .PHONY: all
 
-test_%: main.c atomic.h  cond.h  futex.h  mutex.h  spinlock.h
-	$(CC) $(CFLAGS) main.c -o $@ $(LDFLAGS)
+test_%: qsort-mt.c atomic.h  cond.h  futex.h  mutex.h  spinlock.h
+	$(CC) $(CFLAGS) qsort-mt.c -o $@ $(LDFLAGS)
 
 test_pthread: CFLAGS += -DUSE_PTHREADS
 test_linux: CFLAGS += -DUSE_LINUX
@@ -26,9 +26,10 @@ notice = $(PRINTF) "$(PASS_COLOR)$(strip $1)$(NO_COLOR)\n"
 check: $(ALL)
 	@$(foreach t,$^,\
 	    $(PRINTF) "Running $(t) ... "; \
-	    ./$(t) && $(call notice, [OK]); \
+	    ./$(t) -v -t && $(call notice, [OK]); \
 	)
 
 clean:
 	$(RM) $(ALL)
 .PHONY: clean
+

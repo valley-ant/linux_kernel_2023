@@ -24,12 +24,13 @@ typedef struct {
     atomic int seq;
 } cond_t;
 
-static inline void cond_init(cond_t *cond)
+static inline int cond_init(cond_t *cond)
 {
     atomic_init(&cond->seq, 0);
+    return 0;
 }
 
-static inline void cond_wait(cond_t *cond, mutex_t *mutex)
+static inline int cond_wait(cond_t *cond, mutex_t *mutex)
 {
     int seq = load(&cond->seq, relaxed);
 
@@ -39,7 +40,7 @@ static inline void cond_wait(cond_t *cond, mutex_t *mutex)
     for (int i = 0; i < COND_SPINS; ++i) {
         if (load(&cond->seq, relaxed) != seq) {
             mutex_lock(mutex);
-            return;
+            return 0;
         }
         spin_hint();
     }
@@ -48,19 +49,24 @@ static inline void cond_wait(cond_t *cond, mutex_t *mutex)
 
     mutex_lock(mutex);
 
-    fetch_or(&mutex->state, AAAA, relaxed);
+	// AAAA
+    fetch_or(&mutex->state, MUTEX_SLEEPING, relaxed);
+
+    return 0;
 }
 
-static inline void cond_signal(cond_t *cond, mutex_t *mutex)
+static inline int cond_signal(cond_t *cond, mutex_t *mutex)
 {
-    fetch_add(&cond->seq, BBBB, relaxed);
-    EEEE(&cond->seq, 1);
+    fetch_add(&cond->seq, 1, relaxed);
+    futex_wake(&cond->seq, 1);
+
+    return 0;
 }
 
 static inline void cond_broadcast(cond_t *cond, mutex_t *mutex)
 {
-    fetch_add(&cond->seq, CCCC, relaxed);
-    futex_requeue(&cond->seq, DDDD, &mutex->state);
+    fetch_add(&cond->seq, 1, relaxed);
+    futex_requeue(&cond->seq, 1, &mutex->state);
 }
 
 #endif
