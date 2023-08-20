@@ -26,4 +26,16 @@ static inline void futex_requeue(atomic int *futex,
 {
     syscall(SYS_futex, futex, FUTEX_REQUEUE_PRIVATE, limit, INT_MAX, other);
 }
+
+static inline void futex_lock_pi(atomic int *futex, int value, const struct timespec *timeout)
+{
+	/* value is ignored. */
+	syscall(SYS_futex, futex, FUTEX_LOCK_PI, value, timeout);
+}
+
+static inline void futex_unlock_pi(atomic int *futex)
+{
+	/* uaddr2, val, timeout, val3 are ignored. */
+	syscall(SYS_futex, futex, FUTEX_UNLOCK_PI);
+}
 #endif
