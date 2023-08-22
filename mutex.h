@@ -63,10 +63,15 @@ static inline void mutex_init(mutex_t *mutex, mutype_t type)
 static bool mutex_trylock_pi(mutex_t *mutex)
 {
 	pid_t expect = FUTEX_IDLE_ID;
+	pid_t tid;
 
+	tid = gettid();
+
+	//mutex->owner = gettid();
+	
 	/* 0: mutex is idle, exchange it and return true. */
 	/* if state==expect, then set state to tid. (see futex(2) man page */
-	if (cmpxchg(&mutex->state, &expect, mutex->owner))
+	if (cmpxchg(&mutex->state, &expect, tid))
 		return true;
 
 	/* lock is taken, return false.. */
@@ -76,7 +81,6 @@ static bool mutex_trylock_pi(mutex_t *mutex)
 
 static inline void mutex_lock_pi(mutex_t *mutex)
 {
-	mutex->owner = gettid();
 
     for (int i = 0; i < MUTEX_SPINS; ++i) {
         if (mutex_trylock_pi(mutex))
@@ -93,10 +97,10 @@ static inline void mutex_lock_pi(mutex_t *mutex)
 
 static inline void mutex_unlock_pi(mutex_t *mutex)
 {
-	mutex->owner = gettid();
+	pid_t tid = gettid();
 	
 	/* If mutex is aquired, the tid will be the owner thread */
-	if (cmpxchg(&mutex->state, &mutex->owner, FUTEX_IDLE_ID))
+	if (cmpxchg(&mutex->state, &tid, FUTEX_IDLE_ID))
 		return;
 
 	futex_unlock_pi(&mutex->state);

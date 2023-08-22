@@ -38,4 +38,12 @@ static inline void futex_unlock_pi(atomic int *futex)
 	/* uaddr2, val, timeout, val3 are ignored. */
 	syscall(SYS_futex, futex, FUTEX_UNLOCK_PI);
 }
+
+static inline void futex_requeue_pi(atomic int *futex,
+                                 int limit,
+                                 atomic int *other)
+{
+    syscall(SYS_futex, futex, FUTEX_CMP_REQUEUE_PI, limit, INT_MAX, other);
+}
+
 #endif

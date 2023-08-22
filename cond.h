@@ -60,7 +60,18 @@ static inline void cond_signal(cond_t *cond, mutex_t *mutex)
 static inline void cond_broadcast(cond_t *cond, mutex_t *mutex)
 {
     fetch_add(&cond->seq, 1, relaxed);
-    futex_requeue(&cond->seq, 1, &mutex->state);
+	
+	switch (mutex->type) {
+	case PRIO_DEFAULT: 
+    	futex_requeue(&cond->seq, 1, &mutex->state);
+		break;
+	case PRIO_INHERENT:
+		futex_requeue_pi(&cond->seq, 1, &mutex->state);
+		break;
+
+	default:
+		break;
+}
 }
 
 #endif
